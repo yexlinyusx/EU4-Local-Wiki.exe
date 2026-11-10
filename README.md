@@ -9,7 +9,7 @@ Zero-install: bundled local HTTP server + full-text search over a static mirror.
 
 ## 下载使用 / Download
 
-从 [Releases](../../releases) 下载 `EU4百科离线版-单文件版.exe`（约 1 GB，全部数据已内置）：
+从 [Releases](https://github.com/yexlinyusx/EU4-Local-Wiki.exe/releases/latest) 下载 [`EU4WikiOffline-v1.0.exe`](https://github.com/yexlinyusx/EU4-Local-Wiki.exe/releases/download/v1.0/EU4WikiOffline-v1.0.exe)（约 1 GB，全部数据已内置）：
 
 1. 适用于 Windows 10/11，双击即用，无需安装任何环境
 2. 首次启动自动提取搜索索引（约 15 秒，一次性），之后每次秒开
