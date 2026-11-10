@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.log
+*.ini
+eu4_prefs.json
+tests/
