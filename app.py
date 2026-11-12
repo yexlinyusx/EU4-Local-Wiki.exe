@@ -779,10 +779,23 @@ def wiki_utility_css():
         if raw:
             text = raw.decode("utf-8", errors="replace")
             text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+            # 排除与阅读界面自身布局类撞名的规则（原站皮肤里的 .content
+            # 是 display:none，若注入会把阅读容器整个隐藏）
+            reserved = {"content", "wrap", "rmain", "rmain-inner", "rlayout",
+                        "tocbar", "rh", "rlogo", "sf", "hbtn", "catbox",
+                        "notice", "ptitle", "pmeta", "searchwrap", "errpage"}
             keep = []
             for m in re.finditer(r"([^{}@]+)\{([^{}]*)\}", text):
                 sels = [s.strip() for s in m.group(1).split(",") if s.strip()]
-                if sels and all(s.startswith(".") for s in sels):
+                if not (sels and all(s.startswith(".") for s in sels)):
+                    continue
+                clash = False
+                for s in sels:
+                    first_cls = s[1:].split(".")[0].split(":")[0].split(" ")[0].strip()
+                    if first_cls in reserved:
+                        clash = True
+                        break
+                if not clash:
                     keep.append(m.group(0).strip())
             css = "\n".join(keep)
     except Exception:
