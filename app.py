@@ -486,7 +486,7 @@ class Handler(BaseHTTPRequestHandler):
                     if len(pairs) >= 5:
                         page = render_homepage(title, banner, pairs)
                         html_out = (html_open(title)
-                                    + READER_CSS + INJECT_CSS
+                                    + _util_style() + READER_CSS + INJECT_CSS
                                     + '</head><body>'
                                     + app_header()
                                     + '<div class="rmain wide"><div class="rmain-inner">'
@@ -750,6 +750,50 @@ PREF_FILE = None  # main() 里按数据目录赋值
 
 def _dark_attr():
     return ' class="dark"' if PREFS.get("dark") else ""
+
+
+_UTIL_CSS = {"css": None}
+
+
+def wiki_utility_css():
+    """抽取镜像 skinliberty.css 中的纯类选择器工具样式（bg-红 / bd-黑 等）。
+
+    原站这些内容模板工具类由皮肤 CSS 提供，阅读界面未整份引入皮肤
+    （其 html/body/h1 等全局规则会干扰自建排版），这里只取类选择器规则。
+    """
+    if _UTIL_CSS["css"] is not None:
+        return _UTIL_CSS["css"]
+    css = ""
+    try:
+        raw = None
+        if ZIP_MODE and DATA_ZIP is not None:
+            try:
+                raw = DATA_ZIP.read("skinliberty.css")
+            except KeyError:
+                raw = None
+        elif WIKI_ROOT:
+            p = os.path.join(WIKI_ROOT, "skinliberty.css")
+            if os.path.isfile(p):
+                with open(p, "rb") as f:
+                    raw = f.read()
+        if raw:
+            text = raw.decode("utf-8", errors="replace")
+            text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+            keep = []
+            for m in re.finditer(r"([^{}@]+)\{([^{}]*)\}", text):
+                sels = [s.strip() for s in m.group(1).split(",") if s.strip()]
+                if sels and all(s.startswith(".") for s in sels):
+                    keep.append(m.group(0).strip())
+            css = "\n".join(keep)
+    except Exception:
+        logging.warning("工具样式提取失败:\n%s", traceback.format_exc(limit=1))
+    _UTIL_CSS["css"] = css
+    return css
+
+
+def _util_style():
+    css = wiki_utility_css()
+    return ('<style id="eu4-wiki-util">\n' + css + '\n</style>') if css else ""
 
 
 def html_open(title):
@@ -1227,7 +1271,7 @@ def render_reader(title, content_html, catlinks_html, toc_items, ambox_html=None
         layout_close = '</div></div>'
     return (
         html_open(title)
-        + READER_CSS + INJECT_CSS
+        + _util_style() + READER_CSS + INJECT_CSS
         + '</head><body>'
         + app_header()
         + layout_open
@@ -1289,7 +1333,7 @@ def main():
     ap.add_argument("--rebuild-index", action="store_true", help="强制重建搜索索引")
     args = ap.parse_args()
 
-    global DB_PATH, TITLES_PATH, DATA_DIR, DATA_ZIP, ZIP_MODE, PREF_FILE
+    global DB_PATH, TITLES_PATH, DATA_DIR, DATA_ZIP, ZIP_MODE, PREF_FILE, WIKI_ROOT
     DATA_DIR = os.path.abspath(args.data_dir) if args.data_dir else BASE_DIR
     DB_PATH = os.path.join(DATA_DIR, "search_index.db")
     TITLES_PATH = os.path.join(DATA_DIR, "titles.json")
@@ -1339,6 +1383,7 @@ def main():
                 print("未找到镜像目录，退出。", file=sys.stderr)
                 sys.exit(1)
         write_config(root)
+        WIKI_ROOT = root
         logging.info("镜像根: %s", root)
 
     if args.rebuild_index:

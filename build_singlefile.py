@@ -49,11 +49,15 @@ def build_data_zip(zip_path, mirror, db, titles):
     print("[2/4] 打包数据 zip ...")
     # 用 \\?\ 长路径前缀遍历（镜像里有超过 260 字符的缩略图路径）
     root_p = "\\\\?\\" + os.path.abspath(mirror)
+    skip_names = {"search_index.db", "titles.json", "eu4_prefs.json",
+                  "EU4百科离线版.log", "EU4百科离线版.ini"}
     entries = []
     skipped = 0
     for dirpath, dirnames, filenames in os.walk(root_p):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for fn in filenames:
+            if fn in skip_names:
+                continue  # 索引/清单由下方显式加入；日志与配置不入包
             full = os.path.join(dirpath, fn)
             rel = os.path.relpath(full, root_p).replace("\\", "/")
             entries.append((full, rel))
